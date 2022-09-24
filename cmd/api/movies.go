@@ -61,13 +61,13 @@ func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request)
 
 	movie, err := app.models.Movies.Get(id)
 	if err != nil {
-		if errors.Is(err, data.ErrRecordNotFound) {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
 			app.notFoundResponse(w, r)
-			return
-		} else {
+		default:
 			app.serverErrorResponse(w, r, err)
-			return
 		}
+		return
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"movie": movie}, nil)
@@ -85,13 +85,13 @@ func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Reques
 
 	movie, err := app.models.Movies.Get(id)
 	if err != nil {
-		if errors.Is(err, data.ErrRecordNotFound) {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
 			app.notFoundResponse(w, r)
-			return
-		} else {
+		default:
 			app.serverErrorResponse(w, r, err)
-			return
 		}
+		return
 	}
 
 	var input struct {
@@ -132,7 +132,12 @@ func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Reques
 
 	err = app.models.Movies.Update(movie)
 	if err != nil {
-		app.serverErrorResponse(w, r, err)
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
 		return
 	}
 
@@ -151,13 +156,13 @@ func (app *application) deleteMovieHandler(w http.ResponseWriter, r *http.Reques
 
 	err = app.models.Movies.Delete(id)
 	if err != nil {
-		if errors.Is(err, data.ErrRecordNotFound) {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
 			app.notFoundResponse(w, r)
-			return
-		} else {
+		default:
 			app.serverErrorResponse(w, r, err)
-			return
 		}
+		return
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"message": "movie successfully deleted"}, nil)
