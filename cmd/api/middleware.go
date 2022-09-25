@@ -23,6 +23,8 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 }
 
 func (app *application) rateLimit(next http.Handler) http.Handler {
+	// this rate limiter could be implemented with redis
+	// to share the state between multiple instances of the application
 	type client struct {
 		limiter  *rate.Limiter
 		lastSeen time.Time
