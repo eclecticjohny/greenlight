@@ -4,8 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"fmt"
-	"net/http"
 	"os"
 	"time"
 
@@ -79,22 +77,10 @@ func main() {
 		models: data.NewModels(db),
 	}
 
-	errorLogger, _ := zap.NewStdLogAt(logger, zap.ErrorLevel)
-	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.port),
-		Handler:      app.routes(),
-		ErrorLog:     errorLogger,
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 30 * time.Second,
+	err = app.serve()
+	if err != nil {
+		logger.Fatal("failed to start server", zap.Error(err))
 	}
-
-	logger.Info(
-		"starting api server",
-		zap.String("addr", srv.Addr),
-		zap.String("env", cfg.env))
-	err = srv.ListenAndServe()
-	logger.Fatal("failed to start server", zap.Error(err))
 }
 
 func openDB(cfg config) (*sql.DB, error) {
