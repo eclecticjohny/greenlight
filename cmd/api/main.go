@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/eclecticjohny/greenlight/internal/data"
+	"go.uber.org/zap"
 
 	_ "github.com/lib/pq"
 )
@@ -30,12 +30,13 @@ type config struct {
 
 type application struct {
 	config config
-	logger *log.Logger
+	logger *zap.Logger
 	models data.Models
 }
 
 func main() {
 	var cfg config
+	var logger *zap.Logger
 
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
@@ -47,16 +48,21 @@ func main() {
 
 	flag.Parse()
 
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	if cfg.env == "development" {
+		logger, _ = zap.NewDevelopment()
+	} else {
+		logger, _ = zap.NewProduction()
+	}
+	defer logger.Sync()
 
 	db, err := openDB(cfg)
 	if err != nil {
-		logger.Fatal(err)
+		logger.Fatal("failed to open db", zap.Error(err))
 	}
 
 	defer db.Close()
 
-	logger.Printf("database connection pool established")
+	logger.Info("database connection pool established")
 
 	app := &application{
 		config: cfg,
@@ -64,17 +70,22 @@ func main() {
 		models: data.NewModels(db),
 	}
 
+	errorLogger, _ := zap.NewStdLogAt(logger, zap.ErrorLevel)
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.port),
 		Handler:      app.routes(),
+		ErrorLog:     errorLogger,
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
 
-	logger.Printf("starting %s server on %s", cfg.env, srv.Addr)
+	logger.Info(
+		"starting api server",
+		zap.String("addr", srv.Addr),
+		zap.String("env", cfg.env))
 	err = srv.ListenAndServe()
-	logger.Fatal(err)
+	logger.Fatal("failed to start server", zap.Error(err))
 }
 
 func openDB(cfg config) (*sql.DB, error) {

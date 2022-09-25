@@ -3,10 +3,15 @@ package main
 import (
 	"fmt"
 	"net/http"
+
+	"go.uber.org/zap"
 )
 
 func (app *application) logError(r *http.Request, err error) {
-	app.logger.Print(err)
+	app.logger.Error("application error",
+		zap.Error(err),
+		zap.String("request_method", r.Method),
+		zap.String("request_url", r.URL.String()))
 }
 
 func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, status int, message any) {
