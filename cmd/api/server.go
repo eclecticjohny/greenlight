@@ -33,12 +33,20 @@ func (app *application) serve() error {
 
 		s := <-quit
 
-		app.logger.Info("shutting down server", zap.String("signal", s.String()))
+		app.logger.Info("caught signal", zap.String("signal", s.String()))
 
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 
-		shutdownError <- srv.Shutdown(ctx)
+		err := srv.Shutdown(ctx)
+		if err != nil {
+			shutdownError <- err
+		}
+
+		app.logger.Info("completing background tasks", zap.String("addr", srv.Addr))
+
+		app.wg.Wait()
+		shutdownError <- nil
 	}()
 
 	app.logger.Info(
