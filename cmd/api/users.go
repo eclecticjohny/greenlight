@@ -53,19 +53,12 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	go func() {
-
-		defer func() {
-			if err := recover(); err != nil {
-				app.logger.Error("panic recover error", zap.Error(err))
-			}
-		}()
-
+	app.background(func() {
 		err = app.mailer.Send(user.Email, "user_welcome.gohtml", user)
 		if err != nil {
 			app.logger.Error("mailer send error", zap.Error(err))
 		}
-	}()
+	})
 
 	err = app.writeJSON(w, http.StatusAccepted, envelope{"user": user}, nil)
 	if err != nil {

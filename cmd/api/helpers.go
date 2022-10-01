@@ -12,6 +12,7 @@ import (
 
 	"github.com/eclecticjohny/greenlight/internal/validator"
 	"github.com/julienschmidt/httprouter"
+	"go.uber.org/zap"
 )
 
 func (app *application) readIDParam(r *http.Request) (int64, error) {
@@ -123,4 +124,16 @@ func (app *application) readInt(qs url.Values, key string, defaultValue int, v *
 	}
 
 	return i
+}
+
+func (app *application) background(fn func()) {
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				app.logger.Error("background fn error", zap.Any("error", err))
+			}
+		}()
+
+		fn()
+	}()
 }
