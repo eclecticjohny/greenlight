@@ -14,12 +14,15 @@ import (
 
 	"github.com/eclecticjohny/greenlight/internal/data"
 	"github.com/eclecticjohny/greenlight/internal/mailer"
+	"github.com/eclecticjohny/greenlight/internal/vcs"
 	"go.uber.org/zap"
 
 	_ "github.com/lib/pq"
 )
 
-const version = "1.0.0"
+var (
+	version = vcs.Version()
+)
 
 type config struct {
 	port int
