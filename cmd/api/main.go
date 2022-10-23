@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"expvar"
 	"flag"
+	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -81,7 +83,14 @@ func main() {
 			return nil
 		})
 
+	displayVersion := flag.Bool("version", false, "Display version and exit")
+
 	flag.Parse()
+
+	if *displayVersion {
+		fmt.Printf("Version:\t%s\n", version)
+		os.Exit(0)
+	}
 
 	if cfg.env == "development" {
 		logger, _ = zap.NewDevelopment()
